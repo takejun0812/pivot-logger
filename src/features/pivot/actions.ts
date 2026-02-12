@@ -44,7 +44,31 @@ export async function executePivot(
   revalidatePath('/')
 }
 
+/**
+ * 指定したフェーズに新しいカード（取り組み）を追加する
+ * 「チーム分けして別々の検証をする」場合などに使用
+ */
+export async function addCycleToPhase(projectId: string, phase: number) {
+  await prisma.pivotCycle.create({
+    data: {
+      projectId,
+      phase,
+      status: 'DRAFT', // 初期状態
+      hypothesis: '',
+    },
+  })
+  revalidatePath('/')
+}
 
+/**
+ * カードを削除する
+ */
+export async function deleteCycle(cycleId: string) {
+  await prisma.pivotCycle.delete({
+    where: { id: cycleId },
+  })
+  revalidatePath('/')
+}
 
 /**
  * 日々の進捗保存アクション

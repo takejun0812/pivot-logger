@@ -38,6 +38,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 ## 改善点
 
 - 文字の大きさ
-- フェーズごとに一つずつしか追加できない。
-- 一つのフェーズに複数の作業が発生した場合は？
+- 一つのフェーズに複数のカードが追加できるようにしたい。
+- 入力フォームにて、フェーズを選択できるようにしたい。
+- COMPLETED したカードも削除できるようにしたい。delete 機能の追加
 - AI 活用。AI でのフィードバック、まとめ、全体的なアドバイス

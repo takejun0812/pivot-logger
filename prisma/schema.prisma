@@ -1,84 +1,71 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// prisma/schema.prisma
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")   // Transaction Pooler (Port 6543)
-//   directUrl = env("DIRECT_URL")     Direct Connection (Port 5432)
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ------------------------------------------------------
-// Enums (ドメインの値を型として定義)
+// Enums
 // ------------------------------------------------------
 
-// プロジェクトの状態
 enum ProjectStatus {
-  ACTIVE    // 進行中
-  ARCHIVED  // 終了・アーカイブ
+  ACTIVE
+  ARCHIVED
 }
 
-// サイクルの進行状態 (PDCAのどこにいるか)
 enum CycleStatus {
-  DRAFT     // 仮説構築中（Plan）
-  RUNNING   // 検証実行中（Do）
-  REVIEW    // 結果入力待ち（Check）
-  COMPLETED // 意思決定済み（Act）
+  DRAFT
+  RUNNING
+  REVIEW
+  COMPLETED
 }
 
-// ピボット判断 (次のアクション)
 enum PivotDecision {
-  PENDING   // 未定
-  PERSEVERE // 継続 (そのまま進む)
-  PIVOT     // 方針転換 (軌道修正)
-  KILL      // 撤退 (このアイデアは終了)
+  PENDING
+  PERSEVERE
+  PIVOT
+  KILL
 }
 
-// フィードバックの送信者
 enum AuthorType {
   AI
   MENTOR
 }
 
 // ------------------------------------------------------
-// Models (ドメインモデル)
+// Models
 // ------------------------------------------------------
 
-// 集約ルート: 生徒の事業プロジェクト
 model Project {
   id          String   @id @default(uuid())
-  userId      String   // Supabase AuthのUUID
+  userId      String
   title       String
-  mission     String   // 「誰のどんな課題を解決するか」
+  mission     String
   status      ProjectStatus @default(ACTIVE)
-
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // リレーション: 1つのプロジェクトは複数のサイクル(履歴)を持つ
   cycles      PivotCycle[]
 
-  // インデックス: ユーザーごとのプロジェクト取得を高速化
   @@index([userId])
 }
 
-// エンティティ: 仮説検証サイクル (ここが履歴になる)
 model PivotCycle {
   id          String   @id @default(uuid())
   projectId   String
-
-  // 第何フェーズか (1, 2, 3...)
-  // これにより時系列順に履歴を表示できる
-  phase       Int
-
-  // PDCAデータ (ドメインロジックの中核)
-  hypothesis  String?  @db.Text // 仮説 (Plan)
-  action      String?  @db.Text // 行動 (Do)
-  result      String?  @db.Text // 結果 (Check)
-  learning    String?  @db.Text // 学び (Act)
+  
+  phase       Int      
+  
+  hypothesis  String?  @db.Text
+  action      String?  @db.Text
+  result      String?  @db.Text
+  learning    String?  @db.Text
 
   status      CycleStatus   @default(DRAFT)
   decision    PivotDecision @default(PENDING)
@@ -86,26 +73,26 @@ model PivotCycle {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // リレーション
   project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   feedbacks   Feedback[]
 
-  // インデックス: プロジェクトごとのサイクル取得を高速化
-  @@index([projectId])
+  // ↓↓↓ 修正箇所：ここが正しい場所です ↓↓↓
+  // @@unique([projectId, phase])  <-- これを削除しました（重複OKにするため）
+  
+  @@index([projectId]) // プロジェクトIDで検索しやすくする
+  @@index([phase])     // フェーズ番号で検索しやすくする
 }
 
-// エンティティ: AIやメンターからのフィードバック
 model Feedback {
   id          String   @id @default(uuid())
   cycleId     String
-
+  
   content     String   @db.Text
   authorType  AuthorType
 
   createdAt   DateTime @default(now())
 
-  // リレーション
   cycle       PivotCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
-
+  
   @@index([cycleId])
 }

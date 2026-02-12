@@ -25,7 +25,7 @@ export function PivotCard({ cycle, isLatest }: Props) {
       {/* ヘッダー部分 */}
       <div className="flex justify-between items-start mb-4">
         <div>
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+          <span className="text-xs font-bold text-gray-900 uppercase tracking-wider">
             Phase {cycle.phase}
           </span>
           <h3 className="text-lg font-bold text-gray-900 mt-1">

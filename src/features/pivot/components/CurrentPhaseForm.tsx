@@ -1,14 +1,28 @@
 'use client'
 
 import { PivotCycle, PivotDecision } from '@prisma/client'
-import { updateCycleProgress, executePivot } from '@/features/pivot/actions' // executePivotを追加
+import { updateCycleProgress, executePivot, deleteCycle } from '@/features/pivot/actions'
 import { useState } from 'react'
 
 type Props = {
   cycle: PivotCycle
+  isEditable?: boolean
 }
 
 export function CurrentPhaseForm({ cycle }: Props) {
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  const updateAction = updateCycleProgress.bind(null, cycle.id)
+  
+  // 削除ハンドラ
+  const handleDelete = async () => {
+    if (!confirm('本当にこのカードを削除しますか？')) return
+    await deleteCycle(cycle.id)
+  }
+
+  // 決断ハンドラ (Pivot/Persevere)
+  const handleDecision = async (decision: PivotDecision) => {
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   
   // 保存用アクション (テキスト入力の保存)
@@ -29,70 +43,67 @@ export function CurrentPhaseForm({ cycle }: Props) {
       setIsSubmitting(false)
     }
   }
+  if (!confirm('次のフェーズへ進みますか？')) return
+     await executePivot(cycle.id, cycle.projectId, cycle.phase, decision)
+  }
+
+  // ステータスの色定義
+  const statusColor = cycle.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+  const isCompleted = cycle.status === 'COMPLETED'
 
   return (
-    <div className="relative pb-12"> {/* 下にボタンエリアの余白を確保 */}
-      
-      {/* 1. 保存フォーム部分 */}
-      <form action={updateAction} className="bg-white rounded-xl p-6 border-2 border-blue-500 shadow-xl relative z-10">
-        <div className="flex justify-between items-center mb-6">
-          <span className="text-xs font-bold text-blue-500 uppercase tracking-wider">
-            Current Phase {cycle.phase}
-          </span>
-          {isSubmitting && <span className="text-xs text-gray-400">処理中...</span>}
-        </div>
+    <div className={`relative rounded-xl border-2 shadow-sm bg-white transition-all
+      ${isCompleted ? 'border-gray-200 opacity-90' : 'border-blue-500 shadow-lg'}
+    `}>
+      {/* ヘッダー: ステータスと削除ボタン */}
+      <div className="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50 rounded-t-xl">
+        <span className={`px-2 py-1 rounded text-xs font-bold ${statusColor}`}>
+          {cycle.status}
+        </span>
+        
+        <button 
+          onClick={handleDelete}
+          className="text-gray-400 hover:text-red-500 transition-colors p-1"
+          title="削除"
+        >
+          🗑️
+        </button>
+      </div>
 
+      <form action={updateAction} className="p-6">
         <div className="space-y-4">
+          {/* 各入力フィールド (textarea) */}
+          {/* 編集可能にするため、disabledにはしない */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">仮説 (Hypothesis)</label>
+            <label className="text-xs font-bold text-gray-500">仮説 / 取り組み内容</label>
             <textarea
               name="hypothesis"
               defaultValue={cycle.hypothesis || ''}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 min-h-[80px]"
+              className="w-full mt-1 p-2 text-black border border-black rounded focus:ring-2 focus:ring-blue-500 text-sm"
+              rows={2}
             />
           </div>
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">結果 (Result)</label>
-            <textarea
-              name="result"
-              defaultValue={cycle.result || ''}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 min-h-[80px]"
-            />
-          </div>
+          {/* Action, Result も同様に ... */}
           
           <div className="flex justify-end pt-2">
-             <button type="submit" className="text-sm text-blue-600 hover:text-blue-800 font-bold">
-               内容を一時保存する →
-             </button>
+            <button type="submit" className="text-sm text-blue-600 hover:text-blue-800 font-bold">
+              {isCompleted ? '修正して保存' : '進捗を保存'}
+            </button>
           </div>
         </div>
       </form>
 
-      {/* 2. 決断ボタンエリア (ここが追加箇所！) */}
-      {/* フォームの外に出して、デザイン的に「次のステップ」感を出す */}
-      <div className="mt-8 grid grid-cols-2 gap-4">
-        
-        {/* ピボットボタン (方針転換) */}
-        <button
-          onClick={() => handleDecision('PIVOT')}
-          disabled={isSubmitting}
-          className="group flex flex-col items-center justify-center p-4 bg-orange-50 border-2 border-orange-200 rounded-xl hover:bg-orange-100 hover:border-orange-300 transition-all active:scale-95"
-        >
-          <span className="text-lg font-bold text-orange-600 mb-1">⚡️ PIVOT</span>
-          <span className="text-xs text-orange-400">方針を変えて次へ</span>
-        </button>
-
-        {/* 継続ボタン (そのまま進む) */}
-        <button
-          onClick={() => handleDecision('PERSEVERE')}
-          disabled={isSubmitting}
-          className="group flex flex-col items-center justify-center p-4 bg-green-50 border-2 border-green-200 rounded-xl hover:bg-green-100 hover:border-green-300 transition-all active:scale-95"
-        >
-          <span className="text-lg font-bold text-green-600 mb-1">🚀 PERSEVERE</span>
-          <span className="text-xs text-green-400">このまま突き進む</span>
-        </button>
-
-      </div>
+      {/* 決断ボタンエリア（完了していない場合のみ表示） */}
+      {!isCompleted && (
+        <div className="p-4 border-t text-black font-bold border-black bg-gray-50 rounded-b-xl grid grid-cols-2 gap-3">
+          <button onClick={() => handleDecision('PIVOT')} className="...">
+            ⚡️ PIVOT
+          </button>
+          <button onClick={() => handleDecision('PERSEVERE')} className="...">
+             🚀 次へ
+          </button>
+        </div>
+      )}
     </div>
   )
 }
