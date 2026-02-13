@@ -56,7 +56,7 @@ export function PivotTimeline({ projectId, cycles }: Props) {
                 </h2>
               </div>
               
-              {isCurrentPhase && (
+
                 <button 
                   onClick={() => handleAddCard(phase)}
                   disabled={isAdding}
@@ -64,7 +64,6 @@ export function PivotTimeline({ projectId, cycles }: Props) {
                 >
                   {isAdding ? '追加中...' : '＋ 取り組みを追加'}
                 </button>
-              )}
             </div>
 
             <div className="grid grid-cols-1 gap-6">
