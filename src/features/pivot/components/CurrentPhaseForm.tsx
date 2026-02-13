@@ -1,15 +1,42 @@
 'use client'
 
-import { PivotCycle, PivotDecision } from '@prisma/client'
+import { PivotCycle, PivotDecision, Feedback } from '@prisma/client' // Feedbackを追加
 import { updateCycleProgress, executePivot, deleteCycle } from '@/features/pivot/actions'
+import { askAiMentor } from '@/features/pivot/ai-actions' // AIアクションを追加
 import { useState } from 'react'
+import { defineConfig } from 'prisma/config';
+
+// cycle の型定義を拡張 (Feedbackを含める)
+type CycleWithFeedback = PivotCycle & {
+  feedbacks: Feedback[]
+}
 
 type Props = {
-  cycle: PivotCycle
+  cycle: CycleWithFeedback // 型を変更
 }
 
 export function CurrentPhaseForm({ cycle }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isAiLoading, setIsAiLoading] = useState(false) // AI読み込み中フラグ
+
+  // AI相談ハンドラ
+  const handleAskAi = async () => {
+    if (!cycle.hypothesis) {
+      alert('まずは「仮説」を入力して保存してください！')
+      return
+    }
+
+    setIsAiLoading(true)
+    try {
+      // フォームの値を直接渡すか、DBの値(cycle)を使うか。
+      // ここでは保存済みのDBの値を使います。
+      await askAiMentor(cycle.id, cycle.hypothesis || '', cycle.action || '', cycle.result || '')
+    } catch (error) {
+      alert('AIメンターが忙しいようです... (エラー)')
+    } finally {
+      setIsAiLoading(false)
+    }
+  }
 
   // サーバーアクションの準備
   const updateAction = updateCycleProgress.bind(null, cycle.id)
@@ -91,7 +118,7 @@ export function CurrentPhaseForm({ cycle }: Props) {
 
       {/* --- 入力フォームエリア --- */}
       <form action={updateAction} className="p-6 pt-4">
-        <div className="space-y-4">
+        <div className="space-y-4 text-black">
           {/* 仮説 / 取り組み内容 */}
           <div>
             <label className="block text-xs font-bold text-gray-500 mb-1">仮説 / 取り組み内容 (Hypothesis)</label>
@@ -135,16 +162,57 @@ export function CurrentPhaseForm({ cycle }: Props) {
               />
             </div>
           </div>
-          
-          {/* 保存ボタン (右寄せ) */}
-          <div className="flex justify-end pt-2">
-            <button 
-              type="submit" 
-              className="text-sm bg-gray-100 text-gray-700 hover:bg-blue-600 hover:text-white px-4 py-2 rounded font-bold transition-all shadow-sm"
-            >
-              {isCompleted ? '修正を保存' : '進捗を保存'}
-            </button>
           </div>
+
+          {/* --- AIフィードバックエリア (新規追加) --- */}
+        {/* メンターからのコメントがあれば表示 */}
+        {cycle.feedbacks.length > 0 && (
+          <div className="mt-6 mb-2 bg-indigo-50 border border-indigo-100 rounded-lg p-4">
+            <h4 className="text-xs font-bold text-indigo-500 mb-2 flex items-center gap-1">
+              🤖 AIメンターからの助言
+            </h4>
+            <div className="space-y-3">
+              {cycle.feedbacks.map((fb) => (
+                <div key={fb.id} className="text-sm text-indigo-900 bg-white p-3 rounded shadow-sm">
+                  {fb.content}
+                  <div 
+    className="text-[10px] text-gray-400 text-right mt-1"
+    suppressHydrationWarning={true} 
+  >
+    {new Date(fb.createdAt).toLocaleTimeString('ja-JP')}
+  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+          {/* 保存ボタン (右寄せ) */}
+          <div className="flex justify-between items-center pt-4 border-t border-gray-100 mt-4">
+          
+          {/* 左側: AI相談ボタン */}
+          <button
+            type="button" // form submitにならないように注意！
+            onClick={handleAskAi}
+            disabled={isAiLoading || isSubmitting}
+            className="flex items-center gap-2 text-sm bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition-all shadow-md disabled:bg-gray-300"
+          >
+            {isAiLoading ? (
+              <span>Thinking... 🤔</span>
+            ) : (
+              <>
+                <span>✨ AIに壁打ちする</span>
+              </>
+            )}
+          </button>
+
+          {/* 右側: 保存ボタン (既存) */}
+          <button 
+            type="submit" 
+            className="..." // 既存のスタイル
+          >
+            {isCompleted ? '修正を保存' : '進捗を保存'}
+          </button>
         </div>
       </form>
 

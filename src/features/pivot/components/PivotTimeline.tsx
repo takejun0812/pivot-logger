@@ -1,16 +1,20 @@
 // src/features/pivot/components/PivotTimeline.tsx
 'use client'
 
-import { PivotCycle } from '@prisma/client'
+import { PivotCycle, Feedback } from '@prisma/client'
 import { CurrentPhaseForm } from './CurrentPhaseForm'
 import { addCycleToPhase } from '@/features/pivot/actions'
 import { useState } from 'react'
+
+type CycleWithFeedback = PivotCycle & {
+  feedbacks: Feedback[]
+}
 
 type Props = {
   // プロジェクトIDが必要になったので追加
   // (親コンポーネントから渡す必要があります！後述)
   projectId: string 
-  cycles: PivotCycle[]
+  cycles: CycleWithFeedback[]
 }
 
 export function PivotTimeline({ projectId, cycles }: Props) {
@@ -23,7 +27,7 @@ export function PivotTimeline({ projectId, cycles }: Props) {
     if (!acc[phase]) acc[phase] = []
     acc[phase].push(cycle)
     return acc
-  }, {} as Record<number, PivotCycle[]>)
+  }, {} as Record<number, CycleWithFeedback[]>)
 
   // フェーズ番号の降順（新しい順 3 -> 2 -> 1）リストを作成
   const phases = Object.keys(cyclesByPhase)
