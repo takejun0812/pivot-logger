@@ -189,7 +189,7 @@ export function CurrentPhaseForm({ cycle }: Props) {
 
           <button 
             type="submit" 
-            className="..."
+            className="text-blue-500"
           >
             {isCompleted ? '修正を保存' : '進捗を保存'}
           </button>
