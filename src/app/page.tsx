@@ -21,7 +21,7 @@ export default async function Home() {
         </div>
 
         {/* ここにタイムラインを配置！ */}
-        <PivotTimeline cycles={project.cycles} />
+        <PivotTimeline projectId={project.id} cycles={project.cycles} />
         
       </div>
     </main>
