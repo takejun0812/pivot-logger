@@ -15,10 +15,8 @@ export async function executePivot(
   currentPhase: number, 
   decision: PivotDecision
 ) {
-  // Prismaのトランザクション: 途中で失敗したら全部ロールバックされる
   await prisma.$transaction(async (tx) => {
     
-    // 1. 現在のサイクルをクローズする
     await tx.pivotCycle.update({
       where: { id: cycleId },
       data: {
@@ -27,7 +25,6 @@ export async function executePivot(
       },
     })
 
-    // 2. 「撤退(KILL)」でなければ、次のサイクルを作る
     if (decision !== 'KILL') {
       await tx.pivotCycle.create({
         data: {
@@ -40,14 +37,9 @@ export async function executePivot(
     }
   })
 
-  // 画面を更新（キャッシュをクリアして最新データを再取得）
   revalidatePath('/')
 }
 
-/**
- * 指定したフェーズに新しいカード（取り組み）を追加する
- * 「チーム分けして別々の検証をする」場合などに使用
- */
 export async function addCycleToPhase(projectId: string, phase: number) {
   await prisma.pivotCycle.create({
     data: {

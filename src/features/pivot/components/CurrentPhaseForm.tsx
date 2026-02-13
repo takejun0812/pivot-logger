@@ -28,8 +28,7 @@ export function CurrentPhaseForm({ cycle }: Props) {
 
     setIsAiLoading(true)
     try {
-      // フォームの値を直接渡すか、DBの値(cycle)を使うか。
-      // ここでは保存済みのDBの値を使います。
+      // ここでは保存済みのDBの値を使う。
       await askAiMentor(cycle.id, cycle.hypothesis || '', cycle.action || '', cycle.result || '')
     } catch (error) {
       alert('AIメンターが忙しいようです... (エラー)')
@@ -38,10 +37,8 @@ export function CurrentPhaseForm({ cycle }: Props) {
     }
   }
 
-  // サーバーアクションの準備
   const updateAction = updateCycleProgress.bind(null, cycle.id)
   
-  // 削除ハンドラ
   const handleDelete = async () => {
     if (!confirm('本当にこのカードを削除しますか？\n（この操作は取り消せません）')) return
     
@@ -54,7 +51,6 @@ export function CurrentPhaseForm({ cycle }: Props) {
     }
   }
 
-  // 決断ハンドラ (Pivot/Persevere)
   const handleDecision = async (decision: PivotDecision) => {
     const message = decision === 'PIVOT' 
       ? 'この取り組みを終了し、新しいフェーズ（ピボット）へ移行しますか？'
@@ -71,29 +67,23 @@ export function CurrentPhaseForm({ cycle }: Props) {
     }
   }
 
-  // 状態に応じたスタイル定義
   const isCompleted = cycle.status === 'COMPLETED'
   
-  // 完了済みなら少し薄く、影をなくす
   const containerStyle = isCompleted
     ? 'border-gray-200 bg-gray-50 opacity-90'
     : 'border-blue-500 bg-white shadow-lg ring-1 ring-blue-100'
 
-  // ステータスバッジの色
   const statusBadgeStyle = isCompleted
     ? 'bg-green-100 text-green-700 border-green-200'
     : 'bg-blue-100 text-blue-700 border-blue-200 animate-pulse'
 
   return (
     <div className={`relative rounded-xl border-2 transition-all duration-300 ${containerStyle}`}>
-      
-      {/* --- ヘッダーエリア (ステータス & 削除ボタン) --- */}
       <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100 bg-opacity-50 rounded-t-xl">
         <div className="flex items-center gap-2">
           <span className={`px-2 py-0.5 rounded text-xs font-bold border ${statusBadgeStyle}`}>
             {cycle.status}
           </span>
-          {/* 決断済みの場合は結果を表示 */}
           {cycle.decision !== 'PENDING' && (
             <span className={`px-2 py-0.5 rounded text-xs font-bold border ${
               cycle.decision === 'PIVOT' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-green-100 text-green-700 border-green-200'
@@ -103,7 +93,6 @@ export function CurrentPhaseForm({ cycle }: Props) {
           )}
         </div>
         
-        {/* 削除ボタン (ゴミ箱アイコン) */}
         <button 
           onClick={handleDelete}
           disabled={isSubmitting}
@@ -116,10 +105,8 @@ export function CurrentPhaseForm({ cycle }: Props) {
         </button>
       </div>
 
-      {/* --- 入力フォームエリア --- */}
       <form action={updateAction} className="p-6 pt-4">
         <div className="space-y-4 text-black">
-          {/* 仮説 / 取り組み内容 */}
           <div>
             <label className="block text-xs font-bold text-gray-500 mb-1">仮説 / 取り組み内容 (Hypothesis)</label>
             <textarea
@@ -130,7 +117,6 @@ export function CurrentPhaseForm({ cycle }: Props) {
             />
           </div>
 
-          {/* 行動 (Action) */}
           <div>
             <label className="block text-xs font-bold text-gray-500 mb-1">実行したこと (Action)</label>
             <textarea
@@ -141,7 +127,6 @@ export function CurrentPhaseForm({ cycle }: Props) {
             />
           </div>
 
-          {/* 結果 (Result) & 学び (Learning) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-gray-500 mb-1">結果 (Result)</label>
@@ -164,8 +149,6 @@ export function CurrentPhaseForm({ cycle }: Props) {
           </div>
           </div>
 
-          {/* --- AIフィードバックエリア (新規追加) --- */}
-        {/* メンターからのコメントがあれば表示 */}
         {cycle.feedbacks.length > 0 && (
           <div className="mt-6 mb-2 bg-indigo-50 border border-indigo-100 rounded-lg p-4">
             <h4 className="text-xs font-bold text-indigo-500 mb-2 flex items-center gap-1">
@@ -187,12 +170,10 @@ export function CurrentPhaseForm({ cycle }: Props) {
           </div>
         )}
         
-          {/* 保存ボタン (右寄せ) */}
           <div className="flex justify-between items-center pt-4 border-t border-gray-100 mt-4">
           
-          {/* 左側: AI相談ボタン */}
           <button
-            type="button" // form submitにならないように注意！
+            type="button"
             onClick={handleAskAi}
             disabled={isAiLoading || isSubmitting}
             className="flex items-center gap-2 text-sm bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition-all shadow-md disabled:bg-gray-300"
@@ -206,17 +187,15 @@ export function CurrentPhaseForm({ cycle }: Props) {
             )}
           </button>
 
-          {/* 右側: 保存ボタン (既存) */}
           <button 
             type="submit" 
-            className="..." // 既存のスタイル
+            className="..."
           >
             {isCompleted ? '修正を保存' : '進捗を保存'}
           </button>
         </div>
       </form>
 
-      {/* --- 決断ボタンエリア (完了していない場合のみ表示) --- */}
       {!isCompleted && (
         <div className="px-6 pb-6 pt-2 grid grid-cols-2 gap-3 border-t border-gray-100 mt-2 bg-gray-50 rounded-b-xl">
           <button
